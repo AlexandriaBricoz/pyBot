@@ -43,7 +43,7 @@ def fact(n):
 
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
-    bot.send_message(m.chat.id, 'Я на связи. Напиши мне что-нибудь. fact найдёт факториал )')
+    bot.send_message(m.chat.id, 'Я на связи. Напиши мне что-нибудь. )')
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Факт")
     item2 = types.KeyboardButton("Поговорка")
