@@ -33,6 +33,9 @@ def handler_case(message):
         input_login(message)
     if message.text.strip() == 'Сделать заказ':
         make_an_order(message)
+    if message.text.strip() == 'Назад':
+        markup = gen_markup_start()
+        bot.send_message(message.chat.id, 'Выберите действие', reply_markup=markup)
 
 
 class Old_message():
@@ -52,8 +55,7 @@ def fact(n):
     return x
 
 
-@bot.message_handler(commands=["start"])
-def start(m, res=False):
+def gen_markup_start():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Регистрация")
     item2 = types.KeyboardButton("Вход")
@@ -63,6 +65,12 @@ def start(m, res=False):
     markup.add(item2)
     markup.add(item3)
     markup.add(item4)
+    return markup
+
+
+@bot.message_handler(commands=["start"])
+def start(m, res=False):
+    markup = gen_markup_start()
     bot.send_message(m.chat.id, """Привет! Я - ваш помощник в мире удобных заказов еды из буфетов 🍔🍕.
 
 С моей помощью вы можете легко и быстро оформить заказ из различных буфетов и кафе ОГУ, и вкусная еда будет у вас в считанные минуты.
@@ -84,11 +92,11 @@ def handle_text(message):
     old_message.new(message.text.strip())
 
 
-def login_does_not_exist(messange):
-    if messange.text == 'Регистрация':
-        regist(messange)
+def login_does_not_exist(message):
+    if message.text == 'Регистрация':
+        regist(message)
     else:
-        input_login_2(messange)
+        input_login_2(message)
 
 
 def get_name(message):
@@ -125,11 +133,35 @@ def order(message):
         bot.send_message(user_id, "Оформление заказа. Введите ваш заказ:")
 
 
+buffets = ['Буфет 1', 'Буфет 2', 'Авега']
+menu = {
+    buffets[0]: ['макароны', 'пюре'],
+    buffets[1]: ['макароны', 'булочка', 'чай'],
+    buffets[2]: ['макароны', 'кофе']
+}
+
+
+def list_str(list: list) -> str:
+    result = ''
+    for string in list:
+        result = result + string + '\n'
+    return result
+
+
 def make_an_order(message):
     if message.chat.id in Users_id.ids:
-        bot.send_message(message.chat.id, "Выберите буфет или кафе.")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        for buffet in buffets:
+            markup.add(types.KeyboardButton(buffet))
+        markup.add(types.KeyboardButton('Назад'))
+        bot.send_message(message.chat.id, "Выберите буфет или кафе.", reply_markup=markup)
+        bot.register_next_step_handler(message, out_menu)
     else:
         bot.send_message(message.chat.id, 'Войдите в аккаунт')
+
+
+def out_menu(message):
+    bot.send_message(message.chat.id, f'Меню в выбранном месте:\n{list_str(menu[message.text.strip()])}')
 
 
 old_message = Old_message()
