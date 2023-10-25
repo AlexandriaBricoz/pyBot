@@ -5,6 +5,13 @@ import tocken
 
 bot = telebot.TeleBot(tocken.tocken)
 
+buffets = ['Буфет 1', 'Буфет 2', 'Авега']
+menu = {
+    buffets[0]: [['макароны', 100], ['пюре', 120], ['кофе', 80]],
+    buffets[1]: [['макароны', 90], ['булочка', 100], ['чай', 60]],
+    buffets[2]: [['макароны', 100], ['кофе', 80], ['суп', 120]]
+}
+
 
 class Users_id:
     pass
@@ -46,13 +53,6 @@ class Old_message():
 
     def __repr__(self):
         return self.message
-
-
-def fact(n):
-    x = 1
-    for i in range(1, n + 1, 1):
-        x = x * i
-    return x
 
 
 def gen_markup_start():
@@ -123,29 +123,28 @@ def input_login_2(message):
         bot.register_next_step_handler(message, login_does_not_exist)
 
 
-@bot.message_handler(commands=['order'])
-def order(message):
-    user_id = message.chat.id
-    if user_id not in user_data or 'name' not in user_data[user_id] or 'address' not in user_data[user_id]:
-        bot.send_message(user_id, "Пожалуйста, зарегистрируйтесь сначала.")
-        bot.send_message(user_id, "Введите /start для начала регистрации.")
-    else:
-        bot.send_message(user_id, "Оформление заказа. Введите ваш заказ:")
-
-
-buffets = ['Буфет 1', 'Буфет 2', 'Авега']
-menu = {
-    buffets[0]: ['макароны', 'пюре'],
-    buffets[1]: ['макароны', 'булочка', 'чай'],
-    buffets[2]: ['макароны', 'кофе']
-}
+# @bot.message_handler(commands=['order'])
+# def order(message):
+#     user_id = message.chat.id
+#     if user_id not in user_data or 'name' not in user_data[user_id] or 'address' not in user_data[user_id]:
+#         bot.send_message(user_id, "Пожалуйста, зарегистрируйтесь сначала.")
+#         bot.send_message(user_id, "Введите /start для начала регистрации.")
+#     else:
+#         bot.send_message(user_id, "Оформление заказа. Введите ваш заказ:")
 
 
 def list_str(list: list) -> str:
     result = ''
-    for string in list:
-        result = result + string + '\n'
+    for i, string in enumerate(list):
+        result = f'{result} {i + 1}) {string[0]} - {string[1]}\n'
     return result
+
+
+def gen_markup_menu(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    for dish in menu[message.text.strip()]:
+        markup.add(types.KeyboardButton(dish[0]))
+    bot.send_message(message.chat.id, f'\nВыберите номер', reply_markup=markup)
 
 
 def make_an_order(message):
@@ -161,7 +160,35 @@ def make_an_order(message):
 
 
 def out_menu(message):
-    bot.send_message(message.chat.id, f'Меню в выбранном месте:\n{list_str(menu[message.text.strip()])}')
+    buffet = message.text.strip()
+    if buffet == 'Назад':
+        markup = gen_markup_start()
+        bot.send_message(message.chat.id, 'Выберите действие', reply_markup=markup)
+    elif buffet in menu.keys():
+        bot.send_message(message.chat.id, f'Меню в выбранном месте:\n{list_str(menu[message.text.strip()])}')
+        gen_markup_menu(message)
+        bot.register_next_step_handler(message, menu_case, buffet)
+    else:
+        bot.send_message(message.chat.id,'Попробуйте ещё раз')
+        bot.register_next_step_handler(message, out_menu)
+
+
+def add_dish(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("Добавить")
+    item2 = types.KeyboardButton("Оплатить заказ")
+    item3 = types.KeyboardButton("Повторить заказ")
+    markup.add(item1)
+    markup.add(item2)
+    markup.add(item3)
+    bot.send_message(message.chat.id, "Хороший выбор", reply_markup=markup)
+
+
+def menu_case(message, buffet):
+    for dish in menu[buffet]:
+        if dish[0] == message.text.strip():
+            print(dish[1])
+    add_dish(message)
 
 
 old_message = Old_message()
