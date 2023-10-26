@@ -171,9 +171,11 @@ def gen_markup_dish(message):
     item1 = types.KeyboardButton("Добавить")
     item2 = types.KeyboardButton("Оплатить заказ")
     item3 = types.KeyboardButton("Повторить заказ")
+    item4 = types.KeyboardButton("Очистить корзину")
     markup.add(item1)
     markup.add(item2)
     markup.add(item3)
+    markup.add(item4)
     return markup
 
 
@@ -182,10 +184,14 @@ def gen_markup_dish_case(message, buffet):
         gen_markup_menu(message, buffet)
         bot.register_next_step_handler(message, menu_case, buffet)
     elif message.text.strip() == 'Оплатить заказ':
-        bot.send_message(message.chat.id, 'Выберите способ оплаты')
+        payment(message, buffet)
     elif message.text.strip() == 'Повторить заказ':
-        bot.send_message(message.chat.id, str(users_orders[Users_id.ids[message.chat.id]]))
+        bot.send_message(message.chat.id, repeat_order(message))
         bot.register_next_step_handler(message, gen_markup_dish_case, buffet)
+    elif message.text.strip() == 'Очистить корзину':
+        users_orders.pop(Users_id.ids[message.chat.id])
+        markup = gen_markup_start()
+        bot.send_message(message.chat.id, 'Выберите действие', reply_markup=markup)
     elif message.text.strip() == 'Назад':
         markup = gen_markup_start()
         bot.send_message(message.chat.id, 'Выберите действие', reply_markup=markup)
@@ -203,8 +209,60 @@ def menu_case(message, buffet):
     bot.register_next_step_handler(message, gen_markup_dish_case, buffet)
 
 
-def gen_order():
-    pass
+def price_order(message):
+    check_sum = 0
+    for price in users_orders[Users_id.ids[message.chat.id]]:
+        check_sum += price[1]
+    return check_sum
+
+
+def payment(message, buffet):
+    bot.send_message(message.chat.id, f'Стоимость заказа составляет {price_order(message)}Р')
+    markup = payment_markup(message)
+    bot.send_message(message.chat.id, 'Выберите способ оплаты', reply_markup=markup)
+    bot.register_next_step_handler(message, payment_case, buffet)
+
+
+def repeat_order(message) -> str:
+    result = ''
+    for paragraph in users_orders[Users_id.ids[message.chat.id]]:
+        result = f'{result}{paragraph[0]} - {paragraph[1]}\n'
+    return result
+
+
+def payment_case(message, buffet):
+    if message.text.strip() == 'Юкасса':
+        bot.send_message(message.chat.id, 'Вы выбрали Юкассу')
+        bot.register_next_step_handler(message, menu_case)
+    elif message.text.strip() == 'СПБ':
+        bot.send_message(message.chat.id, 'Вы выбрали СПБ')
+    elif message.text.strip() == 'Повторить заказ':
+        bot.send_message(message.chat.id, repeat_order(message))
+        payment(message, buffet)
+    elif message.text.strip() == 'Добавить':
+        gen_markup_menu(message, buffet)
+        bot.register_next_step_handler(message, menu_case, buffet)
+    elif message.text.strip() == 'Очистить корзину':
+        users_orders.pop(Users_id.ids[message.chat.id])
+        markup = gen_markup_start()
+        bot.send_message(message.chat.id, 'Выберите действие', reply_markup=markup)
+    else:
+        payment(message, buffet)
+
+
+def payment_markup(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("Юкасса")
+    item2 = types.KeyboardButton("СПБ")
+    item3 = types.KeyboardButton("Повторить заказ")
+    item4 = types.KeyboardButton("Добавить")
+    item5 = types.KeyboardButton("Очистить корзину")
+    markup.add(item1)
+    markup.add(item2)
+    markup.add(item3)
+    markup.add(item4)
+    markup.add(item5)
+    return markup
 
 
 if __name__ == '__main__':
